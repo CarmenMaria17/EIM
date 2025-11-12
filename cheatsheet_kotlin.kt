@@ -210,4 +210,217 @@ class SecondActivity : AppCompatActivity() {
     }
 }
 
+//LAB5 - Servicii
+
+import android.app.Service
+import android.content.Intent
+import android.os.IBinder
+
+class SomeStartedService : Service() {
+
+    private var startMode: Int = START_NOT_STICKY
+
+    override fun onCreate() {
+        super.onCreate()
+        // cod de inițializare la crearea serviciului
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // pornești un nou thread sau coroutine pentru logica de background
+        // poți trimite broadcast-uri pentru a actualiza UI-ul
+        return startMode
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        // dacă nu dorești binding, returnează null
+        return null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // eliberezi resurse: thread-uri, listenere, broadcast receiver-e etc.
+    }
+}
+
+// Declararea serviciului în AndroidManifest.xml
+<manifest ...>
+  <application ...>
+    <service
+      android:name="ro.pub.cs.systems.eim.lab05.SomeService"
+      android:enabled="true"
+      android:exported="true"
+      android:permission="ro.pub.cs.systems.eim.lab05.SOME_SERVICE_PERMISSION" />
+  </application>
+</manifest>
+
+
+// Exemplu de serviciu care rulează pe un thread separat
+import android.app.Service
+import android.content.Intent
+import android.os.*
+import android.widget.Toast
+
+class HelloService : Service() {
+
+    private lateinit var serviceLooper: Looper
+    private lateinit var serviceHandler: ServiceHandler
+
+    // Handler intern care procesează mesajele pe thread-ul serviciului
+    private inner class ServiceHandler(looper: Looper) : Handler(looper) {
+        override fun handleMessage(msg: Message) {
+            // Simulăm un task consumator de timp (ex. acces la rețea, DB etc.)
+            try {
+                Thread.sleep(5000)
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+            }
+            // Oprim serviciul după finalizarea task-ului
+            stopSelf(msg.arg1)
+        }
+    }
+
+    override fun onCreate() {
+        // Creăm un nou thread separat pentru a rula logica serviciului
+        val thread = HandlerThread(
+            "ServiceStartArguments",
+            Process.THREAD_PRIORITY_BACKGROUND
+        )
+        thread.start()
+
+        // Obținem Looper-ul thread-ului și îl folosim pentru Handler
+        serviceLooper = thread.looper
+        serviceHandler = ServiceHandler(serviceLooper)
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Toast.makeText(this, "service starting", Toast.LENGTH_SHORT).show()
+
+        // Trimitem un mesaj pentru a procesa job-ul pe thread-ul serviciului
+        val msg = serviceHandler.obtainMessage().apply {
+            arg1 = startId
+        }
+        serviceHandler.sendMessage(msg)
+
+        // Dacă serviciul e omorât de sistem, vrem să fie repornit
+        return START_STICKY
+    }
+
+    override fun onBind(intent: Intent?): IBinder? {
+        // Nu suportă binding → return null
+        return null
+    }
+
+    override fun onDestroy() {
+        Toast.makeText(this, "service done", Toast.LENGTH_SHORT).show()
+    }
+}
+
+
+// explicit service start
+val intent = Intent(this, SomeService::class.java)
+startService(intent)
+
+
+// explicit service stop
+val intent = Intent(this, SomeService::class.java)
+stopService(intent)
+
+// implicit service start
+val intent = Intent().apply {
+    component = ComponentName("SomePackage", "SomeService")
+}
+startService(intent)
+
+// implicit service stop
+val intent = Intent().apply {
+    component = ComponentName("SomePackage", "SomeService")
+}
+stopService(intent)
+
+
+// thread declaration
+
+class ProcessingThread : Thread() {
+
+    // putem primi date prin constructor dacă e nevoie
+    override fun run() {
+        while (true) {
+            // aici rulăm logica de background
+            // atenție: nu actualiza UI-ul direct din acest thread
+        }
+    }
+}
+
+// pornirea thread-ului
+val processingThread = ProcessingThread()
+processingThread.start()
+
+// oprirea thread-ului
+processingThread.interrupt()
+// sau folosim o variabilă de control pentru a ieși din loop-ul run()
+var running = true
+while (running) {
+    // logică
+}
+// pentru a opri:
+running = false
+
+
+// thread in service
+override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+    Log.d(Constants.TAG, "onStartCommand() method was invoked")
+    val processingThread = ProcessingThread()
+    processingThread.start()
+    return START_STICKY
+}
+
+// send broadcast intent
+companion object {
+    const val SOME_ACTION = "ro.pub.cs.systems.eim.lab04.SomeAction.SOME_ACTION"
+}
+
+val intent = Intent(SOME_ACTION).apply {
+    putExtra("someKey", someValue)
+}
+sendBroadcast(intent)
+
+// reciever declaration in manifest
+<manifest ... >
+  <application ... >
+    <receiver
+      android:name=".SomeEventBroadcastReceiver">
+      <intent-filter>
+        <action android:name="ro.pub.cs.systems.eim.lab04.SomeAction.SOME_ACTION" />
+      </intent-filter> 
+    </receiver>
+  </application>
+</manifest>
+
+
+
+// register/unregister in activity
+override fun onResume() {
+    super.onResume()
+    
+    registerReceiver(someEventBroadcastReceiver, intentFilter)
+}
+
+override fun onPause() {
+    super.onPause()
+    
+    unregisterReceiver(someEventBroadcastReceiver)
+}
+
+
+
+// broadcast reciever implementation
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+
+class SomeEventBroadcastReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        // ...
+    }
+}
 
