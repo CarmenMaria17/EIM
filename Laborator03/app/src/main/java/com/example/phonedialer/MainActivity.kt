@@ -9,18 +9,16 @@ import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Bundle
-import android.provider.SyncStateContract
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.TextView
-import androidx.activity.enableEdgeToEdge
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
@@ -40,6 +38,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     companion object {
         private const val PERMISSION_REQUEST_CALL_PHONE = 1
+        const val CONTACTS_MANAGER_REQUEST_CODE = 2017
     }
 
     private val buttonIds = intArrayOf(
@@ -116,10 +115,46 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
     private inner class BackspaceButtonClickListener : View.OnClickListener {
         override fun onClick(view: View) {
             var phoneNumber = PhoneEditText!!.text.toString()
-            if (phoneNumber.length > 0) {
+            if (phoneNumber.isNotEmpty()) {
                 phoneNumber = phoneNumber.substring(0, phoneNumber.length - 1)
                 PhoneEditText!!.setText(phoneNumber)
             }
+        }
+    }
+
+    private val contactsManagerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val data: Intent? = result.data
+            // aici poți prelucra datele returnate, dacă e cazul
+            Toast.makeText(this, "Contact salvat cu succes", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Operațiune anulată", Toast.LENGTH_SHORT).show()
+        }
+    }
+//    private val contactsImageButtonClickListener = View.OnClickListener {
+//        val phoneNumber = PhoneEditText?.text.toString()
+//        if (phoneNumber.isNotEmpty()) {
+//            val intent = Intent("ro.pub.cs.systems.eim.lab04.contactsmanager.intent.action.ContactsManagerActivity").apply {
+//                putExtra("ro.pub.cs.systems.eim.lab04.contactsmanager.PHONE_NUMBER_KEY", phoneNumber)
+//            }
+//            startActivityForResult(intent,CONTACTS_MANAGER_REQUEST_CODE)
+//        } else {
+//            Toast.makeText(applicationContext, getString(R.string.phone_error), Toast.LENGTH_LONG).show()
+//        }
+//    }
+
+    private val contactsImageButtonClickListener = View.OnClickListener {
+        val phoneNumber = PhoneEditText?.text.toString()
+        if (phoneNumber.isNotEmpty()) {
+            val intent = Intent("ro.pub.cs.systems.eim.lab04.contactsmanager.intent.action.ContactsManagerActivity").apply {
+                putExtra("ro.pub.cs.systems.eim.lab04.contactsmanager.PHONE_NUMBER_KEY", phoneNumber)
+            }
+            // 2. Folosește launcher-ul în loc de startActivityForResult
+            contactsManagerLauncher.launch(intent)
+        } else {
+            Toast.makeText(applicationContext, getString(R.string.phone_error), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -145,9 +180,11 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         backspaceImageButton = findViewById<View>(R.id.delete_image_button) as ImageButton
         backspaceImageButton!!.setOnClickListener(backspaceButtonClickListener)
         for (index in buttonIds.indices) {
-            genericButton = findViewById<Button>(buttonIds[index])
+            genericButton = findViewById(buttonIds[index])
             genericButton?.setOnClickListener(genericButtonClickListener)
         }
+
+        findViewById<ImageButton>(R.id.contacts_image_button).setOnClickListener(contactsImageButtonClickListener)
 
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)

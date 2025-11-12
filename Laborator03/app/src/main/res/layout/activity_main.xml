@@ -162,6 +162,17 @@
             android:layout_gravity="center"/>
 
         <ImageButton
+            android:id="@+id/contacts_image_button"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/contacts"
+            android:layout_row="7"
+            android:layout_column="1"
+            android:layout_margin="8dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/contacts"/>
+
+        <ImageButton
             android:id="@+id/decline_image_button"
             android:layout_width="60dp"
             android:layout_height="60dp"

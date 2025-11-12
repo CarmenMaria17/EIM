@@ -12,4 +12,6 @@
     <string name="star">*</string>
     <string name="number_0">0</string>
     <string name="diez">#</string>
+    <string name="contacts">contacts</string>
+    <string name="phone_error">Phone number is empty!</string>
 </resources>
